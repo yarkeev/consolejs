@@ -1,0 +1,30 @@
+{
+  "name": "consolejs",
+  "version": "0.0.0",
+  "homepage": "https://github.com/yarkeev/consolejs",
+  "authors": [
+    "Yarkeev Denis <denis.yarkeev@gmail.com>"
+  ],
+  "description": "dev tools for web developers",
+  "moduleType": [
+    "amd"
+  ],
+  "keywords": [
+    "dev",
+    "tools",
+    "console",
+    "javascript"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "src/components/",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "handlebars": "~3.0.3"
+  }
+}
