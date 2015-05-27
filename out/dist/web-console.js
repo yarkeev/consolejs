@@ -4659,11 +4659,20 @@ define('timing',["require", "exports"], function (require, exports) {
     };
 });
 
-define('main',["require", "exports", "console", "timing"], function (require, exports, Console, timing) {
+define('base',["require", "exports"], function (require, exports) {
+    return function (webConsole) {
+        webConsole.registerApi("log", function (message) {
+            webConsole.print(message);
+        });
+    };
+});
+
+define('main',["require", "exports", "console", "timing", "base"], function (require, exports, Console, timing, base) {
     var webConsole;
     webConsole = new Console();
     window.webConsole = webConsole;
     timing(webConsole);
+    base(webConsole);
 });
 
 
