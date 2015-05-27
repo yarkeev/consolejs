@@ -3,5 +3,8 @@ define(["require", "exports"], function (require, exports) {
         webConsole.registerApi("log", function (message) {
             webConsole.print(message);
         });
+        webConsole.registerCommand("clear", function (message) {
+            webConsole.clear();
+        });
     };
 });

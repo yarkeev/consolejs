@@ -56,9 +56,13 @@ define(["require", "exports", "tmpl"], function (require, exports, Tmpl) {
         WebConsole.prototype.processingInput = function (command) {
             var isNotFound = true;
             this.commands.forEach(function (item) {
+                var output;
                 if (item.name === command) {
                     isNotFound = false;
-                    this.print(item.fn());
+                    output = item.fn();
+                    if (output) {
+                        this.print(output);
+                    }
                 }
             }.bind(this));
             if (isNotFound) {
@@ -70,6 +74,9 @@ define(["require", "exports", "tmpl"], function (require, exports, Tmpl) {
             line.innerHTML = this.start + message;
             this.output.appendChild(line);
             this.output.scrollTop = this.output.scrollHeight;
+        };
+        WebConsole.prototype.clear = function () {
+            this.output.innerHTML = "";
         };
         WebConsole.prototype.registerCommand = function (command, callback) {
             this.commands.push({

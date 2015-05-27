@@ -78,9 +78,14 @@ class WebConsole {
 		var isNotFound: Boolean = true;
 
 		this.commands.forEach(function(item) {
+			var output: any;
+
 			if (item.name === command) {
 				isNotFound = false;
-				this.print(item.fn());
+				output = item.fn();
+				if (output) {
+					this.print(output);
+				}
 			}
 		}.bind(this));
 
@@ -95,6 +100,10 @@ class WebConsole {
 		line.innerHTML = this.start + message;
 		this.output.appendChild(line);
 		this.output.scrollTop = this.output.scrollHeight;
+	}
+
+	public clear() {
+		this.output.innerHTML = "";
 	}
 
 	public registerCommand(command: String, callback: Function) {

@@ -6,4 +6,8 @@ export = function(webConsole: WebConsole) {
 		webConsole.print(message);
 	});
 
+	webConsole.registerCommand("clear", function(message: string) {
+		webConsole.clear();
+	});
+
 };

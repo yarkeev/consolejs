@@ -4600,9 +4600,13 @@ define('console',["require", "exports", "tmpl"], function (require, exports, Tmp
         WebConsole.prototype.processingInput = function (command) {
             var isNotFound = true;
             this.commands.forEach(function (item) {
+                var output;
                 if (item.name === command) {
                     isNotFound = false;
-                    this.print(item.fn());
+                    output = item.fn();
+                    if (output) {
+                        this.print(output);
+                    }
                 }
             }.bind(this));
             if (isNotFound) {
@@ -4614,6 +4618,9 @@ define('console',["require", "exports", "tmpl"], function (require, exports, Tmp
             line.innerHTML = this.start + message;
             this.output.appendChild(line);
             this.output.scrollTop = this.output.scrollHeight;
+        };
+        WebConsole.prototype.clear = function () {
+            this.output.innerHTML = "";
         };
         WebConsole.prototype.registerCommand = function (command, callback) {
             this.commands.push({
@@ -4663,6 +4670,9 @@ define('base',["require", "exports"], function (require, exports) {
     return function (webConsole) {
         webConsole.registerApi("log", function (message) {
             webConsole.print(message);
+        });
+        webConsole.registerCommand("clear", function (message) {
+            webConsole.clear();
         });
     };
 });
