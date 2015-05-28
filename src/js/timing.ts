@@ -38,4 +38,21 @@ export = function(webConsole: WebConsole) {
 		});
 	});
 
+	webConsole.registerApi("timeStatus", function(name) {
+		var duration: number,
+			now: number = Date.now();
+
+		timings.every(function (item: TimeItem, index: number) {
+			var ret: boolean = true;
+
+			if (item.name === name) {
+				duration = now - item.start;
+				webConsole.print(name + ": " + duration + "ms");
+				ret = false;
+			}
+
+			return ret;
+		});
+	});
+
 };

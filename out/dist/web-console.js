@@ -4663,6 +4663,18 @@ define('timing',["require", "exports"], function (require, exports) {
                 return ret;
             });
         });
+        webConsole.registerApi("timeStatus", function (name) {
+            var duration, now = Date.now();
+            timings.every(function (item, index) {
+                var ret = true;
+                if (item.name === name) {
+                    duration = now - item.start;
+                    webConsole.print(name + ": " + duration + "ms");
+                    ret = false;
+                }
+                return ret;
+            });
+        });
     };
 });
 
