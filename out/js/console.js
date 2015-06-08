@@ -87,10 +87,12 @@ define(["require", "exports", "tmpl"], function (require, exports, Tmpl) {
             });
         };
         WebConsole.prototype.registerApi = function (command, callback) {
-            if (Object.defineProperty) {
+            try {
                 Object.defineProperty(this, command, {
                     value: callback
                 });
+            }
+            catch (ignore) {
             }
         };
         return WebConsole;

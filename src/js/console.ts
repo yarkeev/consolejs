@@ -116,10 +116,12 @@ class WebConsole {
 	}
 
 	public registerApi(command: string, callback: Function) {
-		if (Object.defineProperty) {
+		try {
 			Object.defineProperty(this, command, {
 				value: callback
 			});
+		} catch (ignore) {
+			//hack empty block
 		}
 	}
 }
