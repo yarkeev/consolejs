@@ -116,9 +116,11 @@ class WebConsole {
 	}
 
 	public registerApi(command: string, callback: Function) {
-		Object.defineProperty(this, command, {
-			value: callback
-		});
+		if (Object.defineProperty) {
+			Object.defineProperty(this, command, {
+				value: callback
+			});
+		}
 	}
 }
 
