@@ -17,9 +17,11 @@ define(["require", "exports", "tmpl"], function (require, exports, Tmpl) {
             this.output = this.el.querySelector(".b-web-console__output");
         };
         WebConsole.prototype.bindEvents = function () {
-            this.el.addEventListener("click", this.onClick.bind(this));
-            this.input.addEventListener("keydown", this.onInputKeydown.bind(this));
-            document.body.addEventListener("keydown", this.onBodyKeyDown.bind(this), false);
+            if (this.el.addEventListener) {
+                this.el.addEventListener("click", this.onClick.bind(this));
+                this.input.addEventListener("keydown", this.onInputKeydown.bind(this));
+                document.body.addEventListener("keydown", this.onBodyKeyDown.bind(this), false);
+            }
         };
         WebConsole.prototype.show = function () {
             this.el.classList.remove("hide");

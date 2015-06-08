@@ -32,9 +32,11 @@ class WebConsole {
 	}
 
 	protected bindEvents() {
-		this.el.addEventListener("click", this.onClick.bind(this));
-		this.input.addEventListener("keydown", this.onInputKeydown.bind(this));
-		document.body.addEventListener("keydown", this.onBodyKeyDown.bind(this), false);
+		if (this.el.addEventListener) {
+			this.el.addEventListener("click", this.onClick.bind(this));
+			this.input.addEventListener("keydown", this.onInputKeydown.bind(this));
+			document.body.addEventListener("keydown", this.onBodyKeyDown.bind(this), false);
+		}
 	}
 
 	protected show() {
