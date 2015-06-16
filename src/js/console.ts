@@ -106,8 +106,11 @@ class WebConsole {
 		var line: HTMLElement = document.createElement("div");
 
 		line.innerHTML = this.start + message;
-		this.output.appendChild(line);
-		this.output.scrollTop = this.output.scrollHeight;
+
+		if (this.output) {
+			this.output.appendChild(line);
+			this.output.scrollTop = this.output.scrollHeight;
+		}
 	}
 
 	public clear() {

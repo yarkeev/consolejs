@@ -79,8 +79,10 @@ define(["require", "exports", "tmpl"], function (require, exports, Tmpl) {
         WebConsole.prototype.print = function (message) {
             var line = document.createElement("div");
             line.innerHTML = this.start + message;
-            this.output.appendChild(line);
-            this.output.scrollTop = this.output.scrollHeight;
+            if (this.output) {
+                this.output.appendChild(line);
+                this.output.scrollTop = this.output.scrollHeight;
+            }
         };
         WebConsole.prototype.clear = function () {
             this.output.innerHTML = "";
