@@ -15,15 +15,9 @@ class WebConsole {
 	private showState: boolean = false;
 
 	constructor() {
-		var html: string = Tmpl.console({});
-
-		this.el = document.createElement("div");
-		this.el.innerHTML = html;
-		this.el = <HTMLElement> this.el.children[0];
-		document.body.appendChild(this.el);
-
-		this.cacheEls();
-		this.bindEvents();
+		if (document.addEventListener) {
+			document.addEventListener("DOMContentLoaded", this.onDocumentReady.bind(this));
+		}
 	}
 
 	protected cacheEls() {
@@ -56,6 +50,18 @@ class WebConsole {
 		} else {
 			this.show();
 		}
+	}
+
+	protected onDocumentReady(event: Event) {
+		var html: string = Tmpl.console({});
+
+		this.el = document.createElement("div");
+		this.el.innerHTML = html;
+		this.el = <HTMLElement> this.el.children[0];
+		document.body.appendChild(this.el);
+
+		this.cacheEls();
+		this.bindEvents();
 	}
 
 	protected onClick(event: Event) {

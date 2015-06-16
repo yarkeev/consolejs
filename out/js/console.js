@@ -4,13 +4,9 @@ define(["require", "exports", "tmpl"], function (require, exports, Tmpl) {
             this.commands = [];
             this.start = "$ ";
             this.showState = false;
-            var html = Tmpl.console({});
-            this.el = document.createElement("div");
-            this.el.innerHTML = html;
-            this.el = this.el.children[0];
-            document.body.appendChild(this.el);
-            this.cacheEls();
-            this.bindEvents();
+            if (document.addEventListener) {
+                document.addEventListener("DOMContentLoaded", this.onDocumentReady.bind(this));
+            }
         }
         WebConsole.prototype.cacheEls = function () {
             this.input = this.el.querySelector(".b-web-console__input");
@@ -39,6 +35,15 @@ define(["require", "exports", "tmpl"], function (require, exports, Tmpl) {
             else {
                 this.show();
             }
+        };
+        WebConsole.prototype.onDocumentReady = function (event) {
+            var html = Tmpl.console({});
+            this.el = document.createElement("div");
+            this.el.innerHTML = html;
+            this.el = this.el.children[0];
+            document.body.appendChild(this.el);
+            this.cacheEls();
+            this.bindEvents();
         };
         WebConsole.prototype.onClick = function (event) {
             this.input.focus();
