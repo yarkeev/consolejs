@@ -6,7 +6,7 @@ module.exports = function (grunt) {
 			options: {
 				urlfunc: {
 					name: 'embedurl',
-					paths: ['src/img']
+					paths: ['src/icons/']
 				}
 			},
 			files: {

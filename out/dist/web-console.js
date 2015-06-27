@@ -4532,26 +4532,99 @@ define('tmpl',['handlebars'], function(Handlebars) {
 this["JST"] = this["JST"] || {};
 
 this["JST"]["console"] = Handlebars.template({"compiler":[6,">= 2.0.0-beta.1"],"main":function(depth0,helpers,partials,data) {
-    return "<div class=\"b-web-console hide\">\n	<div class=\"b-web-console__output\"></div>\n\n	<div class=\"b-web-console__input-wrapper\">\n		<input type=\"text\" class=\"b-web-console__input\" />\n	</div>\n</div>";
+    return "<div class=\"b-web-console hide\">\n	<div class=\"b-web-console__output\"></div>\n\n	<div class=\"b-web-console__input-wrapper\">\n		<input type=\"text\" class=\"b-web-console__input\" />\n	</div>\n\n	<i class=\"b-web-console__settings-icon\"></i>\n</div>";
 },"useData":true});
 
 this["JST"]["settings"] = Handlebars.template({"compiler":[6,">= 2.0.0-beta.1"],"main":function(depth0,helpers,partials,data) {
-    return "";
+    var helper;
+
+  return "<div class=\"b-web-console__settings-fade\">\n	<div class=\"b-web-console__settings\">\n		<div class=\"b-web-console__settings__header\">\n			Settings\n			<i class=\"b-web-console__settings__close\"></i>\n		</div>\n\n		<div class=\"b-web-console__settings__content\">\n			<dl class=\"b-web-console__settings__item\">\n				<dt class=\"b-web-console__settings__item__title\">Toggle</dt>\n				<dd class=\"b-web-console__settings__item__value\">\n					<input type=\"text\" value=\""
+    + this.escapeExpression(((helper = (helper = helpers.toggleHotkey || (depth0 != null ? depth0.toggleHotkey : depth0)) != null ? helper : helpers.helperMissing),(typeof helper === "function" ? helper.call(depth0,{"name":"toggleHotkey","hash":{},"data":data}) : helper)))
+    + "\" placeholder=\"type shortcut\" class=\"b-web-console__settings__toggle-input\"/>\n				</dd>\n			</dl>\n		</div>\n	</div>\n</div>";
 },"useData":true});
 
 return this["JST"];
 
 });
-define('console',["require", "exports", "tmpl"], function (require, exports, Tmpl) {
+define('settings',["require", "exports", "tmpl"], function (require, exports, Tmpl) {
+    var Settings = (function () {
+        function Settings(console, options) {
+            this.options = options;
+            this.console = console;
+            this.render();
+        }
+        Settings.prototype.render = function () {
+            var html = Tmpl.settings({
+                toggleHotkey: this.console.getSetting("hotkeys.toggle")
+            }), el;
+            el = document.createElement("div");
+            el.innerHTML = html;
+            this.fade = el.querySelector(".b-web-console__settings-fade");
+            this.el = el.querySelector(".b-web-console__settings");
+            this.toggleHotkeyInput = el.querySelector(".b-web-console__settings__toggle-input");
+            this.bindEvents();
+            document.body.appendChild(this.fade);
+        };
+        Settings.prototype.hide = function () {
+            this.fade.style.display = "none";
+        };
+        Settings.prototype.bindEvents = function () {
+            if (this.el.addEventListener) {
+                this.toggleHotkeyInput.addEventListener("focus", this.onToggleHotkeyInputFocus.bind(this));
+                this.toggleHotkeyInput.addEventListener("keydown", this.onToggleHotkeyInputKeyDown.bind(this));
+                this.el.querySelector(".b-web-console__settings__close").addEventListener("click", this.onCloseClick.bind(this));
+                this.fade.addEventListener("click", this.onFadeClick.bind(this));
+            }
+        };
+        Settings.prototype.onToggleHotkeyInputFocus = function (event) {
+            this.toggleHotkeyInput.value = "";
+        };
+        Settings.prototype.onToggleHotkeyInputKeyDown = function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            this.toggleHotkeyInput.value = event.keyCode.toString();
+            this.console.setSetting("hotkeys.toggle", event.keyCode);
+        };
+        Settings.prototype.onCloseClick = function (event) {
+            this.hide();
+        };
+        Settings.prototype.onFadeClick = function (event) {
+            this.hide();
+        };
+        return Settings;
+    })();
+    return Settings;
+});
+
+define('console',["require", "exports", "tmpl", "settings"], function (require, exports, Tmpl, Settings) {
     var WebConsole = (function () {
         function WebConsole() {
+            this.state = {};
             this.commands = [];
             this.start = "$ ";
             this.showState = false;
+            this.history = [];
+            this.historyIndex = 0;
+            this.localStorageKey = "webConsole";
+            this.defaultSettings = {
+                "hotkeys.toggle": 192
+            };
             if (document.addEventListener) {
                 document.addEventListener("DOMContentLoaded", this.onDocumentReady.bind(this));
             }
+            this.loadFromLocalStorage();
         }
+        WebConsole.prototype.loadFromLocalStorage = function () {
+            if (localStorage[this.localStorageKey]) {
+                this.state = JSON.parse(localStorage[this.localStorageKey]);
+                this.history = this.state.history;
+            }
+            this.state.settings = this.state.settings || this.defaultSettings;
+        };
+        WebConsole.prototype.saveToLocalStorage = function () {
+            this.state.history = this.history;
+            localStorage[this.localStorageKey] = JSON.stringify(this.state);
+        };
         WebConsole.prototype.cacheEls = function () {
             this.input = this.el.querySelector(".b-web-console__input");
             this.output = this.el.querySelector(".b-web-console__output");
@@ -4561,6 +4634,7 @@ define('console',["require", "exports", "tmpl"], function (require, exports, Tmp
                 this.el.addEventListener("click", this.onClick.bind(this));
                 this.input.addEventListener("keydown", this.onInputKeydown.bind(this));
                 document.body.addEventListener("keydown", this.onBodyKeyDown.bind(this), false);
+                this.el.querySelector(".b-web-console__settings-icon").addEventListener("click", this.onSettingsIconClick.bind(this));
             }
         };
         WebConsole.prototype.show = function () {
@@ -4580,6 +4654,18 @@ define('console',["require", "exports", "tmpl"], function (require, exports, Tmp
                 this.show();
             }
         };
+        WebConsole.prototype.historyBack = function () {
+            if (this.historyIndex < this.history.length) {
+                this.historyIndex++;
+                this.input.value = this.history[this.history.length - this.historyIndex];
+            }
+        };
+        WebConsole.prototype.historyForward = function () {
+            if (this.historyIndex > 1) {
+                this.historyIndex--;
+                this.input.value = this.history[this.history.length - this.historyIndex];
+            }
+        };
         WebConsole.prototype.onDocumentReady = function (event) {
             var html = Tmpl.console({});
             this.el = document.createElement("div");
@@ -4593,16 +4679,27 @@ define('console',["require", "exports", "tmpl"], function (require, exports, Tmp
             this.input.focus();
         };
         WebConsole.prototype.onInputKeydown = function (event) {
-            if (event.keyCode === 13) {
-                this.processingInput(this.input.value);
-                this.input.value = "";
+            switch (event.keyCode) {
+                case 13:
+                    this.processingInput(this.input.value);
+                    this.input.value = "";
+                    break;
+                case 38:
+                    this.historyBack();
+                    break;
+                case 40:
+                    this.historyForward();
+                    break;
             }
         };
         WebConsole.prototype.onBodyKeyDown = function (event) {
-            if (event.keyCode === 192) {
+            if (event.keyCode === this.getSetting("hotkeys.toggle")) {
                 event.preventDefault();
                 this.toggle();
             }
+        };
+        WebConsole.prototype.onSettingsIconClick = function (event) {
+            this.settings = new Settings(this, {});
         };
         WebConsole.prototype.processingInput = function (command) {
             var isNotFound = true;
@@ -4619,6 +4716,9 @@ define('console',["require", "exports", "tmpl"], function (require, exports, Tmp
             if (isNotFound) {
                 this.print(command + " - command not found");
             }
+            this.history.push(command);
+            this.historyIndex = 0;
+            this.saveToLocalStorage();
         };
         WebConsole.prototype.print = function (message) {
             var line = document.createElement("div");
@@ -4630,6 +4730,20 @@ define('console',["require", "exports", "tmpl"], function (require, exports, Tmp
         };
         WebConsole.prototype.clear = function () {
             this.output.innerHTML = "";
+        };
+        WebConsole.prototype.getSetting = function (settingId) {
+            if (this.state && this.state.settings) {
+                return this.state.settings[settingId];
+            }
+            else {
+                return null;
+            }
+        };
+        WebConsole.prototype.setSetting = function (settingId, value) {
+            if (this.state && this.state.settings) {
+                this.state.settings[settingId] = value;
+                this.saveToLocalStorage();
+            }
         };
         WebConsole.prototype.registerCommand = function (command, callback) {
             this.commands.push({

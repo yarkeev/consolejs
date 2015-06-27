@@ -1,4 +1,5 @@
 import Tmpl = require("tmpl");
+import Settings = require("settings");
 
 interface Command {
 	name: String;
@@ -7,17 +8,42 @@ interface Command {
 
 class WebConsole {
 
+	private state: any = {};
 	private el: HTMLElement;
 	private input: HTMLInputElement;
 	private output: HTMLElement;
 	private commands: Command[] = [];
 	private start: String = "$ ";
 	private showState: boolean = false;
+	private history: string[] = [];
+	private historyIndex: number = 0;
+	private localStorageKey = "webConsole";
+	private settings: Settings;
+	private defaultSettings: any = {
+		"hotkeys.toggle": 192
+	};
 
 	constructor() {
 		if (document.addEventListener) {
 			document.addEventListener("DOMContentLoaded", this.onDocumentReady.bind(this));
 		}
+
+		this.loadFromLocalStorage();
+	}
+
+	protected loadFromLocalStorage() {
+		if (localStorage[this.localStorageKey]) {
+			this.state = JSON.parse(localStorage[this.localStorageKey]);
+
+			this.history = this.state.history;
+		}
+		this.state.settings = this.state.settings || this.defaultSettings;
+	}
+
+	protected saveToLocalStorage() {
+		this.state.history = this.history;
+
+		localStorage[this.localStorageKey] = JSON.stringify(this.state);
 	}
 
 	protected cacheEls() {
@@ -30,6 +56,8 @@ class WebConsole {
 			this.el.addEventListener("click", this.onClick.bind(this));
 			this.input.addEventListener("keydown", this.onInputKeydown.bind(this));
 			document.body.addEventListener("keydown", this.onBodyKeyDown.bind(this), false);
+
+			this.el.querySelector(".b-web-console__settings-icon").addEventListener("click", this.onSettingsIconClick.bind(this));
 		}
 	}
 
@@ -52,6 +80,20 @@ class WebConsole {
 		}
 	}
 
+	protected historyBack() {
+		if (this.historyIndex < this.history.length) {
+			this.historyIndex++;
+			this.input.value = this.history[this.history.length - this.historyIndex];
+		}
+	}
+
+	protected historyForward() {
+		if (this.historyIndex > 1) {
+			this.historyIndex--;
+			this.input.value = this.history[this.history.length - this.historyIndex];
+		}
+	}
+
 	protected onDocumentReady(event: Event) {
 		var html: string = Tmpl.console({});
 
@@ -69,17 +111,29 @@ class WebConsole {
 	}
 
 	protected onInputKeydown(event: KeyboardEvent) {
-		if (event.keyCode === 13) {
-			this.processingInput(this.input.value);
-			this.input.value = "";
+		switch (event.keyCode) {
+			case 13:
+				this.processingInput(this.input.value);
+				this.input.value = "";
+			break;
+			case 38:
+				this.historyBack();
+			break;
+			case 40:
+				this.historyForward();
+			break;
 		}
 	}
 
 	protected onBodyKeyDown(event: KeyboardEvent) {
-		if (event.keyCode === 192) {
+		if (event.keyCode === this.getSetting("hotkeys.toggle")) {
 			event.preventDefault();
 			this.toggle();
 		}
+	}
+
+	protected onSettingsIconClick(event: KeyboardEvent) {
+		this.settings = new Settings(this, {});
 	}
 
 	public processingInput(command: string) {
@@ -100,6 +154,10 @@ class WebConsole {
 		if (isNotFound) {
 			this.print(command + " - command not found");
 		}
+
+		this.history.push(command);
+		this.historyIndex = 0;
+		this.saveToLocalStorage();
 	}
 
 	public print(message: string) {
@@ -115,6 +173,21 @@ class WebConsole {
 
 	public clear() {
 		this.output.innerHTML = "";
+	}
+
+	public getSetting(settingId: string): any {
+		if (this.state && this.state.settings) {
+			return this.state.settings[settingId];
+		} else {
+			return null;
+		}
+	}
+
+	public setSetting(settingId: string, value: any) {
+		if (this.state && this.state.settings) {
+			this.state.settings[settingId] = value;
+			this.saveToLocalStorage();
+		}
 	}
 
 	public registerCommand(command: String, callback: Function) {
