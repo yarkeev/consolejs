@@ -4606,6 +4606,7 @@ define('console',["require", "exports", "tmpl", "settings"], function (require, 
             this.history = [];
             this.historyIndex = 0;
             this.localStorageKey = "webConsole";
+            this.reroutingSymbol = "|";
             this.defaultSettings = {
                 "hotkeys.toggle": 192
             };
@@ -4655,7 +4656,7 @@ define('console',["require", "exports", "tmpl", "settings"], function (require, 
             }
         };
         WebConsole.prototype.historyBack = function () {
-            if (this.historyIndex < this.history.length) {
+            if (this.history.length > this.historyIndex) {
                 this.historyIndex++;
                 this.input.value = this.history[this.history.length - this.historyIndex];
             }
@@ -4702,19 +4703,22 @@ define('console',["require", "exports", "tmpl", "settings"], function (require, 
             this.settings = new Settings(this, {});
         };
         WebConsole.prototype.processingInput = function (command) {
-            var isNotFound = true;
-            this.commands.forEach(function (item) {
-                var output;
-                if (item.name === command) {
-                    isNotFound = false;
-                    output = item.fn();
-                    if (output) {
-                        this.print(output);
+            var isNotFound = true, commands = command.split(this.reroutingSymbol), output;
+            console.log(commands);
+            commands.forEach(function (item) {
+                var commandItem = item.trim().split(" ");
+                this.commands.forEach(function (item) {
+                    if (item.name === commandItem[0]) {
+                        isNotFound = false;
+                        output = item.fn(output, commandItem.slice(1));
                     }
-                }
+                }.bind(this));
             }.bind(this));
             if (isNotFound) {
                 this.print(command + " - command not found");
+            }
+            else if (output) {
+                this.print(output);
             }
             this.history.push(command);
             this.historyIndex = 0;
@@ -4810,8 +4814,16 @@ define('base',["require", "exports"], function (require, exports) {
         webConsole.registerApi("log", function (message) {
             webConsole.print(message);
         });
-        webConsole.registerCommand("clear", function (message) {
+        webConsole.registerCommand("clear", function () {
             webConsole.clear();
+        });
+        webConsole.registerCommand("grep", function (output, args) {
+            var str = String(output).toLowerCase(), search = String(args[0]).toLowerCase(), result = "", indexes = [], i = -1;
+            while ((i = str.indexOf(search, i + 1)) !== -1) {
+                // indexes.push(i);
+                result += String(output).slice(i - 100, i + 100) + "<br/>";
+            }
+            return result;
         });
     };
 });

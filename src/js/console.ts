@@ -19,6 +19,7 @@ class WebConsole {
 	private historyIndex: number = 0;
 	private localStorageKey = "webConsole";
 	private settings: Settings;
+	private reroutingSymbol: string = "|";
 	private defaultSettings: any = {
 		"hotkeys.toggle": 192
 	};
@@ -81,7 +82,7 @@ class WebConsole {
 	}
 
 	protected historyBack() {
-		if (this.historyIndex < this.history.length) {
+		if (this.history.length > this.historyIndex) {
 			this.historyIndex++;
 			this.input.value = this.history[this.history.length - this.historyIndex];
 		}
@@ -137,22 +138,26 @@ class WebConsole {
 	}
 
 	public processingInput(command: string) {
-		var isNotFound: Boolean = true;
+		var isNotFound: Boolean = true,
+			commands: string[] = command.split(this.reroutingSymbol),
+			output: string;
 
-		this.commands.forEach(function(item) {
-			var output: any;
+		console.log(commands);
+		commands.forEach(function (item) {
+			var commandItem: string = item.trim().split(" ");
 
-			if (item.name === command) {
-				isNotFound = false;
-				output = item.fn();
-				if (output) {
-					this.print(output);
+			this.commands.forEach(function(item) {
+				if (item.name === commandItem[0]) {
+					isNotFound = false;
+					output = item.fn(output, commandItem.slice(1));
 				}
-			}
+			}.bind(this));
 		}.bind(this));
 
 		if (isNotFound) {
 			this.print(command + " - command not found");
+		} else if (output) {
+			this.print(output);
 		}
 
 		this.history.push(command);
