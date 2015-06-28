@@ -18,8 +18,8 @@ class Settings {
 
 	protected render() {
 		var html: string = Tmpl.settings({
-			toggleHotkey: this.console.getSetting("hotkeys.toggle")
-		}),
+				toggleHotkey: this.console.getSetting("hotkeys.toggle")
+			}),
 			el: HTMLElement;
 
 		el = document.createElement("div");
@@ -41,6 +41,7 @@ class Settings {
 	protected bindEvents() {
 		if (this.el.addEventListener) {
 			this.toggleHotkeyInput.addEventListener("focus", this.onToggleHotkeyInputFocus.bind(this));
+			this.toggleHotkeyInput.addEventListener("blur", this.onToggleHotkeyInputBlur.bind(this));
 			this.toggleHotkeyInput.addEventListener("keydown", this.onToggleHotkeyInputKeyDown.bind(this));
 			this.el.querySelector(".b-web-console__settings__close").addEventListener("click", this.onCloseClick.bind(this));
 			this.fade.addEventListener("click", this.onFadeClick.bind(this));
@@ -49,6 +50,10 @@ class Settings {
 
 	protected onToggleHotkeyInputFocus(event: Event) {
 		this.toggleHotkeyInput.value = "";
+	}
+
+	protected onToggleHotkeyInputBlur(event: Event) {
+		this.toggleHotkeyInput.value = this.console.getSetting("hotkeys.toggle");
 	}
 
 	protected onToggleHotkeyInputKeyDown(event: KeyboardEvent) {
@@ -64,7 +69,11 @@ class Settings {
 	}
 
 	protected onFadeClick(event: KeyboardEvent) {
-		this.hide();
+		event.stopPropagation();
+
+		if (event.target === this.fade) {
+			this.hide();
+		}
 	}
 }
 

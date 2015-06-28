@@ -65,12 +65,16 @@ export = function(webConsole: WebConsole) {
 		}
 
 		return function () {
-			var ret: string,
-				fileContent: string = file.getContent();
+			var ret: string = null,
+				fileContent: string;
 
-			ret = fileContent.slice(lastResult.length);
-			if (ret) {
-				lastResult += ret;
+			if (file) {
+				fileContent = file.getContent();
+
+				ret = fileContent.slice(lastResult.length);
+				if (ret) {
+					lastResult += ret;
+				}
 			}
 
 			return ret;

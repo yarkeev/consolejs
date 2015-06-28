@@ -16,6 +16,10 @@ class File {
 	public getContent(): string {
 		return this.content.replace(/\n/g, "<br/>");
 	}
+
+	public setContent(content: string) {
+		return this.content = content;
+	}
 }
 
 class FileSystem {

@@ -12,6 +12,9 @@ define(["require", "exports"], function (require, exports) {
         File.prototype.getContent = function () {
             return this.content.replace(/\n/g, "<br/>");
         };
+        File.prototype.setContent = function (content) {
+            return this.content = content;
+        };
         return File;
     })();
     var FileSystem = (function () {

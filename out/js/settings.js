@@ -23,6 +23,7 @@ define(["require", "exports", "tmpl"], function (require, exports, Tmpl) {
         Settings.prototype.bindEvents = function () {
             if (this.el.addEventListener) {
                 this.toggleHotkeyInput.addEventListener("focus", this.onToggleHotkeyInputFocus.bind(this));
+                this.toggleHotkeyInput.addEventListener("blur", this.onToggleHotkeyInputBlur.bind(this));
                 this.toggleHotkeyInput.addEventListener("keydown", this.onToggleHotkeyInputKeyDown.bind(this));
                 this.el.querySelector(".b-web-console__settings__close").addEventListener("click", this.onCloseClick.bind(this));
                 this.fade.addEventListener("click", this.onFadeClick.bind(this));
@@ -30,6 +31,9 @@ define(["require", "exports", "tmpl"], function (require, exports, Tmpl) {
         };
         Settings.prototype.onToggleHotkeyInputFocus = function (event) {
             this.toggleHotkeyInput.value = "";
+        };
+        Settings.prototype.onToggleHotkeyInputBlur = function (event) {
+            this.toggleHotkeyInput.value = this.console.getSetting("hotkeys.toggle");
         };
         Settings.prototype.onToggleHotkeyInputKeyDown = function (event) {
             event.preventDefault();
@@ -41,7 +45,10 @@ define(["require", "exports", "tmpl"], function (require, exports, Tmpl) {
             this.hide();
         };
         Settings.prototype.onFadeClick = function (event) {
-            this.hide();
+            event.stopPropagation();
+            if (event.target === this.fade) {
+                this.hide();
+            }
         };
         return Settings;
     })();

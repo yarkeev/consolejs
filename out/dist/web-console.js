@@ -4571,6 +4571,7 @@ define('settings',["require", "exports", "tmpl"], function (require, exports, Tm
         Settings.prototype.bindEvents = function () {
             if (this.el.addEventListener) {
                 this.toggleHotkeyInput.addEventListener("focus", this.onToggleHotkeyInputFocus.bind(this));
+                this.toggleHotkeyInput.addEventListener("blur", this.onToggleHotkeyInputBlur.bind(this));
                 this.toggleHotkeyInput.addEventListener("keydown", this.onToggleHotkeyInputKeyDown.bind(this));
                 this.el.querySelector(".b-web-console__settings__close").addEventListener("click", this.onCloseClick.bind(this));
                 this.fade.addEventListener("click", this.onFadeClick.bind(this));
@@ -4578,6 +4579,9 @@ define('settings',["require", "exports", "tmpl"], function (require, exports, Tm
         };
         Settings.prototype.onToggleHotkeyInputFocus = function (event) {
             this.toggleHotkeyInput.value = "";
+        };
+        Settings.prototype.onToggleHotkeyInputBlur = function (event) {
+            this.toggleHotkeyInput.value = this.console.getSetting("hotkeys.toggle");
         };
         Settings.prototype.onToggleHotkeyInputKeyDown = function (event) {
             event.preventDefault();
@@ -4589,7 +4593,10 @@ define('settings',["require", "exports", "tmpl"], function (require, exports, Tm
             this.hide();
         };
         Settings.prototype.onFadeClick = function (event) {
-            this.hide();
+            event.stopPropagation();
+            if (event.target === this.fade) {
+                this.hide();
+            }
         };
         return Settings;
     })();
@@ -4609,6 +4616,9 @@ define('fileSystem',["require", "exports"], function (require, exports) {
         };
         File.prototype.getContent = function () {
             return this.content.replace(/\n/g, "<br/>");
+        };
+        File.prototype.setContent = function (content) {
+            return this.content = content;
         };
         return File;
     })();
@@ -4655,8 +4665,11 @@ define('console',["require", "exports", "tmpl", "settings", "fileSystem"], funct
             this.historyIndex = 0;
             this.localStorageKey = "webConsole";
             this.reroutingSymbol = "|";
+            this.lastKeyDownKey = null;
             this.defaultSettings = {
-                "hotkeys.toggle": 192
+                "hotkeys.toggle": 192,
+                "hotkeys.ctrl": 17,
+                "hotkeys.c": 67
             };
             if (document.addEventListener) {
                 document.addEventListener("DOMContentLoaded", this.onDocumentReady.bind(this));
@@ -4670,7 +4683,10 @@ define('console',["require", "exports", "tmpl", "settings", "fileSystem"], funct
                 this.history = this.state.history;
                 this.fileSystem.setState(this.state.fileSystem);
             }
-            this.state.settings = this.state.settings || this.defaultSettings;
+            this.state.settings = this.state.settings || {};
+            Object.keys(this.defaultSettings).forEach(function (item) {
+                this.state.settings[item] = this.state.settings[item] || this.defaultSettings[item];
+            }.bind(this));
         };
         WebConsole.prototype.saveToLocalStorage = function () {
             this.state.history = this.history;
@@ -4717,6 +4733,9 @@ define('console',["require", "exports", "tmpl", "settings", "fileSystem"], funct
                 this.historyIndex--;
                 this.input.value = this.history[this.history.length - this.historyIndex];
             }
+            else if (this.historyIndex === 1) {
+                this.input.value = "";
+            }
         };
         WebConsole.prototype.onDocumentReady = function (event) {
             var html = Tmpl.console({});
@@ -4749,6 +4768,12 @@ define('console',["require", "exports", "tmpl", "settings", "fileSystem"], funct
                 event.preventDefault();
                 this.toggle();
             }
+            if (event.keyCode === this.getSetting("hotkeys.c") && this.lastKeyDownKey === this.getSetting("hotkeys.ctrl")) {
+                clearInterval(this.lokedInterval);
+                this.input.removeAttribute("disabled");
+                this.input.focus();
+            }
+            this.lastKeyDownKey = event.keyCode;
         };
         WebConsole.prototype.onSettingsIconClick = function (event) {
             this.settings = new Settings(this, {});
@@ -4767,7 +4792,7 @@ define('console',["require", "exports", "tmpl", "settings", "fileSystem"], funct
                             else {
                                 lockedFn = item.fn(output, commandItem.slice(1));
                                 output = lockedFn();
-                                setInterval(function () {
+                                this.lokedInterval = setInterval(function () {
                                     output = lockedFn();
                                     commands.slice(index + 1).forEach(function (item) {
                                         var commandItem = item.trim().split(" ");
@@ -4781,6 +4806,7 @@ define('console',["require", "exports", "tmpl", "settings", "fileSystem"], funct
                                         this.print(output, true);
                                     }
                                 }.bind(this), 1000);
+                                this.input.setAttribute("disabled", "disabled");
                             }
                         }
                     }.bind(this));
@@ -4791,7 +4817,9 @@ define('console',["require", "exports", "tmpl", "settings", "fileSystem"], funct
                 else if (output) {
                     this.print(command + "<br/>" + output);
                 }
-                this.history.push(command);
+                if (this.history[this.history.length - 1] !== command) {
+                    this.history.push(command);
+                }
                 this.historyIndex = 0;
                 this.saveToLocalStorage();
             }
@@ -4934,10 +4962,13 @@ define('base',["require", "exports"], function (require, exports) {
                 result = fileName + ": No such file or directory";
             }
             return function () {
-                var ret, fileContent = file.getContent();
-                ret = fileContent.slice(lastResult.length);
-                if (ret) {
-                    lastResult += ret;
+                var ret = null, fileContent;
+                if (file) {
+                    fileContent = file.getContent();
+                    ret = fileContent.slice(lastResult.length);
+                    if (ret) {
+                        lastResult += ret;
+                    }
                 }
                 return ret;
             };
@@ -4945,12 +4976,28 @@ define('base',["require", "exports"], function (require, exports) {
     };
 });
 
-define('main',["require", "exports", "console", "timing", "base"], function (require, exports, Console, timing, base) {
+define('ajaxLog',["require", "exports"], function (require, exports) {
+    return function (webConsole) {
+        var lastEntries = [];
+        setInterval(function () {
+            var entries = window.performance.getEntries();
+            entries.slice(lastEntries.length).forEach(function (item) {
+                if (item.initiatorType === "xmlhttprequest") {
+                    webConsole.log(item.name + " " + (item.responseEnd - item.responseStart).toFixed(2) + "ms", "/logs/ajax");
+                }
+            });
+            lastEntries = entries;
+        }, 1000);
+    };
+});
+
+define('main',["require", "exports", "console", "timing", "base", "ajaxLog"], function (require, exports, Console, timing, base, ajaxLog) {
     var webConsole;
     webConsole = new Console();
     window.webConsole = webConsole;
     timing(webConsole);
     base(webConsole);
+    ajaxLog(webConsole);
 });
 
 

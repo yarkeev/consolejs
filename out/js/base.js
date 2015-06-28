@@ -46,10 +46,13 @@ define(["require", "exports"], function (require, exports) {
                 result = fileName + ": No such file or directory";
             }
             return function () {
-                var ret, fileContent = file.getContent();
-                ret = fileContent.slice(lastResult.length);
-                if (ret) {
-                    lastResult += ret;
+                var ret = null, fileContent;
+                if (file) {
+                    fileContent = file.getContent();
+                    ret = fileContent.slice(lastResult.length);
+                    if (ret) {
+                        lastResult += ret;
+                    }
                 }
                 return ret;
             };
