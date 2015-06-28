@@ -29,6 +29,7 @@ class FileSystem {
 
 	constructor(console: WebConsole) {
 		this.console = console;
+		this.files = {};
 
 		setInterval(function() {
 			this.console.saveToLocalStorage();

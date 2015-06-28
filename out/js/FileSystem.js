@@ -20,6 +20,7 @@ define(["require", "exports"], function (require, exports) {
     var FileSystem = (function () {
         function FileSystem(console) {
             this.console = console;
+            this.files = {};
             setInterval(function () {
                 this.console.saveToLocalStorage();
             }.bind(this), this.intervalSaveBuffer);
