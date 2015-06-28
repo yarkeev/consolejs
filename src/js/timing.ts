@@ -36,7 +36,7 @@ export = function(webConsole: any) {
 		});
 	});
 
-	webConsole.registerApi("timeStatus", function(name) {
+	webConsole.registerApi("timeStatus", function(name, logFile) {
 		var duration: number,
 			now: number = Date.now();
 
@@ -45,7 +45,11 @@ export = function(webConsole: any) {
 
 			if (item.name === name) {
 				duration = now - item.start;
-				webConsole.print(name + ": " + duration + "ms");
+				if (logFile) {
+					webConsole.log(name + ": " + duration + "ms", logFile);
+				} else {
+					webConsole.print(name + ": " + duration + "ms");
+				}
 				ret = false;
 			}
 

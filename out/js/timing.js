@@ -25,13 +25,18 @@ define(["require", "exports"], function (require, exports) {
                 return ret;
             });
         });
-        webConsole.registerApi("timeStatus", function (name) {
+        webConsole.registerApi("timeStatus", function (name, logFile) {
             var duration, now = Date.now();
             timings.every(function (item, index) {
                 var ret = true;
                 if (item.name === name) {
                     duration = now - item.start;
-                    webConsole.print(name + ": " + duration + "ms");
+                    if (logFile) {
+                        webConsole.log(name + ": " + duration + "ms", logFile);
+                    }
+                    else {
+                        webConsole.print(name + ": " + duration + "ms");
+                    }
                     ret = false;
                 }
                 return ret;
