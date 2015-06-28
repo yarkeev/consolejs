@@ -1,11 +1,9 @@
-import WebConsole = require("console");
-
 interface TimeItem {
 	name: String;
 	start: number;
 }
 
-export = function(webConsole: WebConsole) {
+export = function(webConsole: any) {
 
 	var timings: TimeItem[] = [];
 
@@ -16,7 +14,7 @@ export = function(webConsole: WebConsole) {
 		});
 	});
 
-	webConsole.registerApi("timeEnd", function(name) {
+	webConsole.registerApi("timeEnd", function(name, logFile) {
 		var duration: number,
 			now: number = Date.now();
 
@@ -25,7 +23,11 @@ export = function(webConsole: WebConsole) {
 
 			if (item.name === name) {
 				duration = now - item.start;
-				webConsole.print(name + ": " + duration + "ms");
+				if (logFile) {
+					webConsole.log(name + ": " + duration + "ms", logFile);
+				} else {
+					webConsole.print(name + ": " + duration + "ms");
+				}
 				timings.splice(index, 1);
 				ret = false;
 			}

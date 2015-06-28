@@ -4887,13 +4887,18 @@ define('timing',["require", "exports"], function (require, exports) {
                 start: Date.now()
             });
         });
-        webConsole.registerApi("timeEnd", function (name) {
+        webConsole.registerApi("timeEnd", function (name, logFile) {
             var duration, now = Date.now();
             timings.every(function (item, index) {
                 var ret = true;
                 if (item.name === name) {
                     duration = now - item.start;
-                    webConsole.print(name + ": " + duration + "ms");
+                    if (logFile) {
+                        webConsole.log(name + ": " + duration + "ms", logFile);
+                    }
+                    else {
+                        webConsole.print(name + ": " + duration + "ms");
+                    }
                     timings.splice(index, 1);
                     ret = false;
                 }
