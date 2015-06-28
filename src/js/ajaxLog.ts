@@ -1,6 +1,12 @@
+declare var performance: any;
+
 export = function(webConsole) {
 
 	var lastEntries = [];
+
+	performance.onwebkitresourcetimingbufferfull = function() {
+		performance.webkitSetResourceTimingBufferSize(10000);
+	};
 
 	setInterval(function () {
 		var entries = window.performance.getEntries();

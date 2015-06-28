@@ -4980,6 +4980,9 @@ define('base',["require", "exports"], function (require, exports) {
 define('ajaxLog',["require", "exports"], function (require, exports) {
     return function (webConsole) {
         var lastEntries = [];
+        performance.onwebkitresourcetimingbufferfull = function () {
+            performance.webkitSetResourceTimingBufferSize(10000);
+        };
         setInterval(function () {
             var entries = window.performance.getEntries();
             entries.slice(lastEntries.length).forEach(function (item) {
