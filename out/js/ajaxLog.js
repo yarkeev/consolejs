@@ -5,10 +5,11 @@ define(["require", "exports"], function (require, exports) {
             performance.webkitSetResourceTimingBufferSize(10000);
         };
         setInterval(function () {
-            var entries = window.performance.getEntries();
+            var entries = window.performance.getEntries(), timeStr;
             entries.slice(lastEntries.length).forEach(function (item) {
                 if (item.initiatorType === "xmlhttprequest") {
-                    webConsole.log(item.name + " " + (item.responseEnd - item.responseStart).toFixed(2) + "ms", "/logs/ajax");
+                    timeStr = " <span style='color:#2AFF00'>" + (item.responseEnd - item.requestStart).toFixed(2) + "ms</span>";
+                    webConsole.log(item.name + timeStr, "/logs/ajax");
                 }
             });
             lastEntries = entries;

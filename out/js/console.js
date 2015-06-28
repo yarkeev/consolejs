@@ -10,6 +10,7 @@ define(["require", "exports", "tmpl", "settings", "fileSystem"], function (requi
             this.localStorageKey = "webConsole";
             this.reroutingSymbol = "|";
             this.lastKeyDownKey = null;
+            this.isResizeNow = false;
             this.defaultSettings = {
                 "hotkeys.toggle": 192,
                 "hotkeys.ctrl": 17,
@@ -44,9 +45,12 @@ define(["require", "exports", "tmpl", "settings", "fileSystem"], function (requi
         WebConsole.prototype.bindEvents = function () {
             if (this.el.addEventListener) {
                 this.el.addEventListener("click", this.onClick.bind(this));
-                this.input.addEventListener("keydown", this.onInputKeydown.bind(this));
+                this.input.addEventListener("keydown", this.onInputKeyDown.bind(this));
                 document.body.addEventListener("keydown", this.onBodyKeyDown.bind(this), false);
+                document.body.addEventListener("mousemove", this.onBodyMouseMove.bind(this), false);
+                document.body.addEventListener("mouseup", this.onBodyMouseUp.bind(this), false);
                 this.el.querySelector(".b-web-console__settings-icon").addEventListener("click", this.onSettingsIconClick.bind(this));
+                this.el.querySelector(".b-web-console__resize").addEventListener("mousedown", this.onResizeMouseDown.bind(this));
             }
         };
         WebConsole.prototype.show = function () {
@@ -93,7 +97,7 @@ define(["require", "exports", "tmpl", "settings", "fileSystem"], function (requi
         WebConsole.prototype.onClick = function (event) {
             this.input.focus();
         };
-        WebConsole.prototype.onInputKeydown = function (event) {
+        WebConsole.prototype.onInputKeyDown = function (event) {
             switch (event.keyCode) {
                 case 13:
                     this.processingInput(this.input.value);
@@ -119,8 +123,23 @@ define(["require", "exports", "tmpl", "settings", "fileSystem"], function (requi
             }
             this.lastKeyDownKey = event.keyCode;
         };
+        WebConsole.prototype.onBodyMouseMove = function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (this.isResizeNow) {
+                this.el.style.height = String(this.el.offsetHeight + (event.pageY - this.lastPageY)) + "px";
+            }
+            this.lastPageY = event.pageY;
+        };
+        WebConsole.prototype.onBodyMouseUp = function (event) {
+            this.isResizeNow = false;
+        };
         WebConsole.prototype.onSettingsIconClick = function (event) {
             this.settings = new Settings(this, {});
+        };
+        WebConsole.prototype.onResizeMouseDown = function (event) {
+            this.lastPageY = event.pageY;
+            this.isResizeNow = true;
         };
         WebConsole.prototype.processingInput = function (command) {
             var isNotFound = true, commands = command.split(this.reroutingSymbol), output, lockedFn;

@@ -4532,7 +4532,7 @@ define('tmpl',['handlebars'], function(Handlebars) {
 this["JST"] = this["JST"] || {};
 
 this["JST"]["console"] = Handlebars.template({"compiler":[6,">= 2.0.0-beta.1"],"main":function(depth0,helpers,partials,data) {
-    return "<div class=\"b-web-console hide\">\n	<div class=\"b-web-console__output\"></div>\n\n	<div class=\"b-web-console__input-wrapper\">\n		<input type=\"text\" class=\"b-web-console__input\" />\n	</div>\n\n	<i class=\"b-web-console__settings-icon\"></i>\n</div>";
+    return "<div class=\"b-web-console hide\">\n	<div class=\"b-web-console__output\"></div>\n\n	<div class=\"b-web-console__input-wrapper\">\n		<input type=\"text\" class=\"b-web-console__input\" />\n	</div>\n\n	<i class=\"b-web-console__settings-icon\"></i>\n\n	<div class=\"b-web-console__resize\"></div>\n</div>";
 },"useData":true});
 
 this["JST"]["settings"] = Handlebars.template({"compiler":[6,">= 2.0.0-beta.1"],"main":function(depth0,helpers,partials,data) {
@@ -4667,6 +4667,7 @@ define('console',["require", "exports", "tmpl", "settings", "fileSystem"], funct
             this.localStorageKey = "webConsole";
             this.reroutingSymbol = "|";
             this.lastKeyDownKey = null;
+            this.isResizeNow = false;
             this.defaultSettings = {
                 "hotkeys.toggle": 192,
                 "hotkeys.ctrl": 17,
@@ -4701,9 +4702,12 @@ define('console',["require", "exports", "tmpl", "settings", "fileSystem"], funct
         WebConsole.prototype.bindEvents = function () {
             if (this.el.addEventListener) {
                 this.el.addEventListener("click", this.onClick.bind(this));
-                this.input.addEventListener("keydown", this.onInputKeydown.bind(this));
+                this.input.addEventListener("keydown", this.onInputKeyDown.bind(this));
                 document.body.addEventListener("keydown", this.onBodyKeyDown.bind(this), false);
+                document.body.addEventListener("mousemove", this.onBodyMouseMove.bind(this), false);
+                document.body.addEventListener("mouseup", this.onBodyMouseUp.bind(this), false);
                 this.el.querySelector(".b-web-console__settings-icon").addEventListener("click", this.onSettingsIconClick.bind(this));
+                this.el.querySelector(".b-web-console__resize").addEventListener("mousedown", this.onResizeMouseDown.bind(this));
             }
         };
         WebConsole.prototype.show = function () {
@@ -4750,7 +4754,7 @@ define('console',["require", "exports", "tmpl", "settings", "fileSystem"], funct
         WebConsole.prototype.onClick = function (event) {
             this.input.focus();
         };
-        WebConsole.prototype.onInputKeydown = function (event) {
+        WebConsole.prototype.onInputKeyDown = function (event) {
             switch (event.keyCode) {
                 case 13:
                     this.processingInput(this.input.value);
@@ -4776,8 +4780,23 @@ define('console',["require", "exports", "tmpl", "settings", "fileSystem"], funct
             }
             this.lastKeyDownKey = event.keyCode;
         };
+        WebConsole.prototype.onBodyMouseMove = function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (this.isResizeNow) {
+                this.el.style.height = String(this.el.offsetHeight + (event.pageY - this.lastPageY)) + "px";
+            }
+            this.lastPageY = event.pageY;
+        };
+        WebConsole.prototype.onBodyMouseUp = function (event) {
+            this.isResizeNow = false;
+        };
         WebConsole.prototype.onSettingsIconClick = function (event) {
             this.settings = new Settings(this, {});
+        };
+        WebConsole.prototype.onResizeMouseDown = function (event) {
+            this.lastPageY = event.pageY;
+            this.isResizeNow = true;
         };
         WebConsole.prototype.processingInput = function (command) {
             var isNotFound = true, commands = command.split(this.reroutingSymbol), output, lockedFn;
@@ -4994,10 +5013,11 @@ define('ajaxLog',["require", "exports"], function (require, exports) {
             performance.webkitSetResourceTimingBufferSize(10000);
         };
         setInterval(function () {
-            var entries = window.performance.getEntries();
+            var entries = window.performance.getEntries(), timeStr;
             entries.slice(lastEntries.length).forEach(function (item) {
                 if (item.initiatorType === "xmlhttprequest") {
-                    webConsole.log(item.name + " " + (item.responseEnd - item.responseStart).toFixed(2) + "ms", "/logs/ajax");
+                    timeStr = " <span style='color:#2AFF00'>" + (item.responseEnd - item.requestStart).toFixed(2) + "ms</span>";
+                    webConsole.log(item.name + timeStr, "/logs/ajax");
                 }
             });
             lastEntries = entries;

@@ -25,6 +25,8 @@ class WebConsole {
 	private reroutingSymbol: string = "|";
 	private lokedInterval: number;
 	private lastKeyDownKey: number = null;
+	private isResizeNow: boolean = false;
+	private lastPageY: number;
 	private defaultSettings: any = {
 		"hotkeys.toggle": 192,
 		"hotkeys.ctrl": 17,
@@ -69,10 +71,13 @@ class WebConsole {
 	protected bindEvents() {
 		if (this.el.addEventListener) {
 			this.el.addEventListener("click", this.onClick.bind(this));
-			this.input.addEventListener("keydown", this.onInputKeydown.bind(this));
+			this.input.addEventListener("keydown", this.onInputKeyDown.bind(this));
 			document.body.addEventListener("keydown", this.onBodyKeyDown.bind(this), false);
+			document.body.addEventListener("mousemove", this.onBodyMouseMove.bind(this), false);
+			document.body.addEventListener("mouseup", this.onBodyMouseUp.bind(this), false);
 
 			this.el.querySelector(".b-web-console__settings-icon").addEventListener("click", this.onSettingsIconClick.bind(this));
+			this.el.querySelector(".b-web-console__resize").addEventListener("mousedown", this.onResizeMouseDown.bind(this));
 		}
 	}
 
@@ -127,7 +132,7 @@ class WebConsole {
 		this.input.focus();
 	}
 
-	protected onInputKeydown(event: KeyboardEvent) {
+	protected onInputKeyDown(event: KeyboardEvent) {
 		switch (event.keyCode) {
 			case 13:
 				this.processingInput(this.input.value);
@@ -157,8 +162,28 @@ class WebConsole {
 		this.lastKeyDownKey = event.keyCode;
 	}
 
+	protected onBodyMouseMove(event: MouseEvent) {
+		event.preventDefault();
+		event.stopPropagation();
+
+		if (this.isResizeNow) {
+			this.el.style.height = String(this.el.offsetHeight + (event.pageY - this.lastPageY)) + "px";
+		}
+
+		this.lastPageY = event.pageY;
+	}
+
+	protected onBodyMouseUp(event: MouseEvent) {
+		this.isResizeNow = false;
+	}
+
 	protected onSettingsIconClick(event: KeyboardEvent) {
 		this.settings = new Settings(this, {});
+	}
+
+	protected onResizeMouseDown(event: MouseEvent) {
+		this.lastPageY = event.pageY;
+		this.isResizeNow = true;
 	}
 
 	public processingInput(command: string) {
