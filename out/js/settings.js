@@ -7,13 +7,15 @@ define(["require", "exports", "tmpl"], function (require, exports, Tmpl) {
         }
         Settings.prototype.render = function () {
             var html = Tmpl.settings({
-                toggleHotkey: this.console.getSetting("hotkeys.toggle")
+                toggleHotkey: this.console.getSetting("hotkeys.toggle"),
+                limitFileSize: this.console.getSetting("fileSystem.linesLimit")
             }), el;
             el = document.createElement("div");
             el.innerHTML = html;
             this.fade = el.querySelector(".b-web-console__settings-fade");
             this.el = el.querySelector(".b-web-console__settings");
             this.toggleHotkeyInput = el.querySelector(".b-web-console__settings__toggle-input");
+            this.fileSizeLimitInput = el.querySelector(".b-web-console__settings__limit-file-size");
             this.bindEvents();
             document.body.appendChild(this.fade);
         };
@@ -25,6 +27,7 @@ define(["require", "exports", "tmpl"], function (require, exports, Tmpl) {
                 this.toggleHotkeyInput.addEventListener("focus", this.onToggleHotkeyInputFocus.bind(this));
                 this.toggleHotkeyInput.addEventListener("blur", this.onToggleHotkeyInputBlur.bind(this));
                 this.toggleHotkeyInput.addEventListener("keydown", this.onToggleHotkeyInputKeyDown.bind(this));
+                this.fileSizeLimitInput.addEventListener("change", this.onFileSizeLimitInputChange.bind(this));
                 this.el.querySelector(".b-web-console__settings__close").addEventListener("click", this.onCloseClick.bind(this));
                 this.fade.addEventListener("click", this.onFadeClick.bind(this));
             }
@@ -40,6 +43,12 @@ define(["require", "exports", "tmpl"], function (require, exports, Tmpl) {
             event.stopPropagation();
             this.toggleHotkeyInput.value = event.keyCode.toString();
             this.console.setSetting("hotkeys.toggle", event.keyCode);
+        };
+        Settings.prototype.onFileSizeLimitInputChange = function (event) {
+            var limit = parseInt(this.fileSizeLimitInput.value, 10);
+            if (!isNaN(limit)) {
+                this.console.setSetting("fileSystem.linesLimit", limit);
+            }
         };
         Settings.prototype.onCloseClick = function (event) {
             this.hide();

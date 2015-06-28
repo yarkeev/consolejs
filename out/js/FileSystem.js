@@ -1,13 +1,21 @@
 define(["require", "exports"], function (require, exports) {
     var File = (function () {
-        function File(path, content) {
+        function File(console, path, content) {
             if (content === void 0) { content = ""; }
             this.content = "";
+            this.console = console;
             this.path = path;
             this.content = content;
         }
         File.prototype.write = function (str) {
+            var lines, start;
             this.content += "\n" + str;
+            lines = this.content.split("\n");
+            start = lines.length - this.console.getSetting("fileSystem.linesLimit");
+            if (start > 0) {
+                lines = lines.slice(start);
+            }
+            this.content = lines.join("\n");
         };
         File.prototype.getContent = function () {
             return this.content.replace(/\n/g, "<br/>");
@@ -29,7 +37,7 @@ define(["require", "exports"], function (require, exports) {
             state = state || {};
             this.files = {};
             Object.keys(state).forEach(function (fileName) {
-                this.files[fileName] = new File(fileName, state[fileName]);
+                this.files[fileName] = new File(this.console, fileName, state[fileName]);
             }.bind(this));
         };
         FileSystem.prototype.toJSON = function () {
@@ -43,7 +51,7 @@ define(["require", "exports"], function (require, exports) {
             return this.files[fileName];
         };
         FileSystem.prototype.createFile = function (fileName) {
-            return this.files[fileName] = new File(fileName);
+            return this.files[fileName] = new File(this.console, fileName, "");
         };
         return FileSystem;
     })();

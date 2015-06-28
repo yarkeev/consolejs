@@ -1,16 +1,28 @@
 import WebConsole = require("console");
 
 class File {
+	private console: WebConsole;
 	private path: string;
 	private content: string = "";
 
-	constructor(path: string, content: string = "") {
+	constructor(console: WebConsole, path: string, content: string = "") {
+		this.console = console;
 		this.path = path;
 		this.content = content;
 	}
 
 	public write(str: string) {
+		var lines: string[],
+			start: number;
+
 		this.content += "\n" + str;
+
+		lines = this.content.split("\n");
+		start = lines.length - this.console.getSetting("fileSystem.linesLimit");
+		if (start > 0) {
+			lines = lines.slice(start);
+		}
+		this.content = lines.join("\n");
 	}
 
 	public getContent(): string {
@@ -41,7 +53,7 @@ class FileSystem {
 		this.files = {};
 
 		Object.keys(state).forEach(function (fileName) {
-			this.files[fileName] = new File(fileName, state[fileName]);
+			this.files[fileName] = new File(this.console, fileName, state[fileName]);
 		}.bind(this));
 	}
 
@@ -60,7 +72,7 @@ class FileSystem {
 	}
 
 	public createFile(fileName: string): File {
-		return this.files[fileName] = new File(fileName);
+		return this.files[fileName] = new File(this.console, fileName, "");
 	}
 }
 

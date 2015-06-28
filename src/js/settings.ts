@@ -6,6 +6,7 @@ class Settings {
 	private el: HTMLElement;
 	private fade: HTMLElement;
 	private toggleHotkeyInput: HTMLInputElement;
+	private fileSizeLimitInput: HTMLInputElement;
 	private options: any;
 	private console: WebConsole;
 
@@ -18,7 +19,8 @@ class Settings {
 
 	protected render() {
 		var html: string = Tmpl.settings({
-				toggleHotkey: this.console.getSetting("hotkeys.toggle")
+				toggleHotkey: this.console.getSetting("hotkeys.toggle"),
+				limitFileSize: this.console.getSetting("fileSystem.linesLimit")
 			}),
 			el: HTMLElement;
 
@@ -28,6 +30,7 @@ class Settings {
 		this.fade = <HTMLElement> el.querySelector(".b-web-console__settings-fade");
 		this.el = <HTMLElement> el.querySelector(".b-web-console__settings");
 		this.toggleHotkeyInput = <HTMLInputElement> el.querySelector(".b-web-console__settings__toggle-input");
+		this.fileSizeLimitInput = <HTMLInputElement> el.querySelector(".b-web-console__settings__limit-file-size");
 
 		this.bindEvents();
 
@@ -43,6 +46,7 @@ class Settings {
 			this.toggleHotkeyInput.addEventListener("focus", this.onToggleHotkeyInputFocus.bind(this));
 			this.toggleHotkeyInput.addEventListener("blur", this.onToggleHotkeyInputBlur.bind(this));
 			this.toggleHotkeyInput.addEventListener("keydown", this.onToggleHotkeyInputKeyDown.bind(this));
+			this.fileSizeLimitInput.addEventListener("change", this.onFileSizeLimitInputChange.bind(this));
 			this.el.querySelector(".b-web-console__settings__close").addEventListener("click", this.onCloseClick.bind(this));
 			this.fade.addEventListener("click", this.onFadeClick.bind(this));
 		}
@@ -62,6 +66,14 @@ class Settings {
 
 		this.toggleHotkeyInput.value = event.keyCode.toString();
 		this.console.setSetting("hotkeys.toggle", event.keyCode);
+	}
+
+	protected onFileSizeLimitInputChange(event: Event) {
+		var limit: number = parseInt(this.fileSizeLimitInput.value, 10);
+
+		if (!isNaN(limit)) {
+			this.console.setSetting("fileSystem.linesLimit", limit);
+		}
 	}
 
 	protected onCloseClick(event: KeyboardEvent) {

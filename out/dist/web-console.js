@@ -4532,15 +4532,17 @@ define('tmpl',['handlebars'], function(Handlebars) {
 this["JST"] = this["JST"] || {};
 
 this["JST"]["console"] = Handlebars.template({"compiler":[6,">= 2.0.0-beta.1"],"main":function(depth0,helpers,partials,data) {
-    return "<div class=\"b-web-console hide\">\n	<div class=\"b-web-console__output\"></div>\n\n	<div class=\"b-web-console__input-wrapper\">\n		<input type=\"text\" class=\"b-web-console__input\" />\n	</div>\n\n	<i class=\"b-web-console__settings-icon\"></i>\n\n	<div class=\"b-web-console__resize\"></div>\n</div>";
+    return "<div class=\"b-web-console\">\n	<div class=\"b-web-console__output\"></div>\n\n	<div class=\"b-web-console__input-wrapper\">\n		<input type=\"text\" class=\"b-web-console__input\" />\n	</div>\n\n	<i class=\"b-web-console__settings-icon\"></i>\n\n	<div class=\"b-web-console__resize\"></div>\n</div>";
 },"useData":true});
 
 this["JST"]["settings"] = Handlebars.template({"compiler":[6,">= 2.0.0-beta.1"],"main":function(depth0,helpers,partials,data) {
-    var helper;
+    var helper, alias1=helpers.helperMissing, alias2="function", alias3=this.escapeExpression;
 
   return "<div class=\"b-web-console__settings-fade\">\n	<div class=\"b-web-console__settings\">\n		<div class=\"b-web-console__settings__header\">\n			Settings\n			<i class=\"b-web-console__settings__close\"></i>\n		</div>\n\n		<div class=\"b-web-console__settings__content\">\n			<dl class=\"b-web-console__settings__item\">\n				<dt class=\"b-web-console__settings__item__title\">Toggle</dt>\n				<dd class=\"b-web-console__settings__item__value\">\n					<input type=\"text\" value=\""
-    + this.escapeExpression(((helper = (helper = helpers.toggleHotkey || (depth0 != null ? depth0.toggleHotkey : depth0)) != null ? helper : helpers.helperMissing),(typeof helper === "function" ? helper.call(depth0,{"name":"toggleHotkey","hash":{},"data":data}) : helper)))
-    + "\" placeholder=\"type shortcut\" class=\"b-web-console__settings__toggle-input\"/>\n				</dd>\n			</dl>\n		</div>\n	</div>\n</div>";
+    + alias3(((helper = (helper = helpers.toggleHotkey || (depth0 != null ? depth0.toggleHotkey : depth0)) != null ? helper : alias1),(typeof helper === alias2 ? helper.call(depth0,{"name":"toggleHotkey","hash":{},"data":data}) : helper)))
+    + "\" placeholder=\"type shortcut\" class=\"b-web-console__settings__toggle-input\"/>\n				</dd>\n			</dl>\n\n			<dl class=\"b-web-console__settings__item\">\n				<dt class=\"b-web-console__settings__item__title\">Limit file size (in lines)</dt>\n				<dd class=\"b-web-console__settings__item__value\">\n					<input type=\"text\" value=\""
+    + alias3(((helper = (helper = helpers.limitFileSize || (depth0 != null ? depth0.limitFileSize : depth0)) != null ? helper : alias1),(typeof helper === alias2 ? helper.call(depth0,{"name":"limitFileSize","hash":{},"data":data}) : helper)))
+    + "\" placeholder=\"limit\" class=\"b-web-console__settings__limit-file-size\"/>\n				</dd>\n			</dl>\n		</div>\n	</div>\n</div>";
 },"useData":true});
 
 return this["JST"];
@@ -4555,13 +4557,15 @@ define('settings',["require", "exports", "tmpl"], function (require, exports, Tm
         }
         Settings.prototype.render = function () {
             var html = Tmpl.settings({
-                toggleHotkey: this.console.getSetting("hotkeys.toggle")
+                toggleHotkey: this.console.getSetting("hotkeys.toggle"),
+                limitFileSize: this.console.getSetting("fileSystem.linesLimit")
             }), el;
             el = document.createElement("div");
             el.innerHTML = html;
             this.fade = el.querySelector(".b-web-console__settings-fade");
             this.el = el.querySelector(".b-web-console__settings");
             this.toggleHotkeyInput = el.querySelector(".b-web-console__settings__toggle-input");
+            this.fileSizeLimitInput = el.querySelector(".b-web-console__settings__limit-file-size");
             this.bindEvents();
             document.body.appendChild(this.fade);
         };
@@ -4573,6 +4577,7 @@ define('settings',["require", "exports", "tmpl"], function (require, exports, Tm
                 this.toggleHotkeyInput.addEventListener("focus", this.onToggleHotkeyInputFocus.bind(this));
                 this.toggleHotkeyInput.addEventListener("blur", this.onToggleHotkeyInputBlur.bind(this));
                 this.toggleHotkeyInput.addEventListener("keydown", this.onToggleHotkeyInputKeyDown.bind(this));
+                this.fileSizeLimitInput.addEventListener("change", this.onFileSizeLimitInputChange.bind(this));
                 this.el.querySelector(".b-web-console__settings__close").addEventListener("click", this.onCloseClick.bind(this));
                 this.fade.addEventListener("click", this.onFadeClick.bind(this));
             }
@@ -4588,6 +4593,12 @@ define('settings',["require", "exports", "tmpl"], function (require, exports, Tm
             event.stopPropagation();
             this.toggleHotkeyInput.value = event.keyCode.toString();
             this.console.setSetting("hotkeys.toggle", event.keyCode);
+        };
+        Settings.prototype.onFileSizeLimitInputChange = function (event) {
+            var limit = parseInt(this.fileSizeLimitInput.value, 10);
+            if (!isNaN(limit)) {
+                this.console.setSetting("fileSystem.linesLimit", limit);
+            }
         };
         Settings.prototype.onCloseClick = function (event) {
             this.hide();
@@ -4605,14 +4616,22 @@ define('settings',["require", "exports", "tmpl"], function (require, exports, Tm
 
 define('fileSystem',["require", "exports"], function (require, exports) {
     var File = (function () {
-        function File(path, content) {
+        function File(console, path, content) {
             if (content === void 0) { content = ""; }
             this.content = "";
+            this.console = console;
             this.path = path;
             this.content = content;
         }
         File.prototype.write = function (str) {
+            var lines, start;
             this.content += "\n" + str;
+            lines = this.content.split("\n");
+            start = lines.length - this.console.getSetting("fileSystem.linesLimit");
+            if (start > 0) {
+                lines = lines.slice(start);
+            }
+            this.content = lines.join("\n");
         };
         File.prototype.getContent = function () {
             return this.content.replace(/\n/g, "<br/>");
@@ -4634,7 +4653,7 @@ define('fileSystem',["require", "exports"], function (require, exports) {
             state = state || {};
             this.files = {};
             Object.keys(state).forEach(function (fileName) {
-                this.files[fileName] = new File(fileName, state[fileName]);
+                this.files[fileName] = new File(this.console, fileName, state[fileName]);
             }.bind(this));
         };
         FileSystem.prototype.toJSON = function () {
@@ -4648,7 +4667,7 @@ define('fileSystem',["require", "exports"], function (require, exports) {
             return this.files[fileName];
         };
         FileSystem.prototype.createFile = function (fileName) {
-            return this.files[fileName] = new File(fileName);
+            return this.files[fileName] = new File(this.console, fileName, "");
         };
         return FileSystem;
     })();
@@ -4671,7 +4690,8 @@ define('console',["require", "exports", "tmpl", "settings", "fileSystem"], funct
             this.defaultSettings = {
                 "hotkeys.toggle": 192,
                 "hotkeys.ctrl": 17,
-                "hotkeys.c": 67
+                "hotkeys.c": 67,
+                "fileSystem.linesLimit": 100
             };
             if (document.addEventListener) {
                 document.addEventListener("DOMContentLoaded", this.onDocumentReady.bind(this));
@@ -4711,12 +4731,12 @@ define('console',["require", "exports", "tmpl", "settings", "fileSystem"], funct
             }
         };
         WebConsole.prototype.show = function () {
-            this.el.classList.remove("hide");
+            this.el.style.top = "0px";
             this.input.focus();
             this.showState = true;
         };
         WebConsole.prototype.hide = function () {
-            this.el.classList.add("hide");
+            this.el.style.top = -this.el.offsetHeight + "px";
             this.showState = false;
         };
         WebConsole.prototype.toggle = function () {

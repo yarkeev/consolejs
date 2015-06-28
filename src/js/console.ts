@@ -30,7 +30,8 @@ class WebConsole {
 	private defaultSettings: any = {
 		"hotkeys.toggle": 192,
 		"hotkeys.ctrl": 17,
-		"hotkeys.c": 67
+		"hotkeys.c": 67,
+		"fileSystem.linesLimit": 100
 	};
 
 	constructor() {
@@ -82,13 +83,13 @@ class WebConsole {
 	}
 
 	protected show() {
-		this.el.classList.remove("hide");
+		this.el.style.top = "0px";
 		this.input.focus();
 		this.showState = true;
 	}
 
 	protected hide() {
-		this.el.classList.add("hide");
+		this.el.style.top = -this.el.offsetHeight + "px";
 		this.showState = false;
 	}
 

@@ -14,7 +14,8 @@ define(["require", "exports", "tmpl", "settings", "fileSystem"], function (requi
             this.defaultSettings = {
                 "hotkeys.toggle": 192,
                 "hotkeys.ctrl": 17,
-                "hotkeys.c": 67
+                "hotkeys.c": 67,
+                "fileSystem.linesLimit": 100
             };
             if (document.addEventListener) {
                 document.addEventListener("DOMContentLoaded", this.onDocumentReady.bind(this));
@@ -54,12 +55,12 @@ define(["require", "exports", "tmpl", "settings", "fileSystem"], function (requi
             }
         };
         WebConsole.prototype.show = function () {
-            this.el.classList.remove("hide");
+            this.el.style.top = "0px";
             this.input.focus();
             this.showState = true;
         };
         WebConsole.prototype.hide = function () {
-            this.el.classList.add("hide");
+            this.el.style.top = -this.el.offsetHeight + "px";
             this.showState = false;
         };
         WebConsole.prototype.toggle = function () {
