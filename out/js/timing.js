@@ -1,9 +1,6 @@
 define(["require", "exports"], function (require, exports) {
     return function (webConsole) {
         var timings = [];
-        webConsole.registerCommand("now", function () {
-            return new Date();
-        });
         webConsole.registerApi("time", function (name) {
             timings.push({
                 name: name,

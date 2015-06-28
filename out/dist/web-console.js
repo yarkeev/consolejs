@@ -4596,7 +4596,55 @@ define('settings',["require", "exports", "tmpl"], function (require, exports, Tm
     return Settings;
 });
 
-define('console',["require", "exports", "tmpl", "settings"], function (require, exports, Tmpl, Settings) {
+define('fileSystem',["require", "exports"], function (require, exports) {
+    var File = (function () {
+        function File(path, content) {
+            if (content === void 0) { content = ""; }
+            this.content = "";
+            this.path = path;
+            this.content = content;
+        }
+        File.prototype.write = function (str) {
+            this.content += "\n" + str;
+        };
+        File.prototype.getContent = function () {
+            return this.content.replace(/\n/g, "<br/>");
+        };
+        return File;
+    })();
+    var FileSystem = (function () {
+        function FileSystem(console) {
+            this.console = console;
+            setInterval(function () {
+                this.console.saveToLocalStorage();
+            }.bind(this), this.intervalSaveBuffer);
+        }
+        FileSystem.prototype.setState = function (state) {
+            state = state || {};
+            this.files = {};
+            Object.keys(state).forEach(function (fileName) {
+                this.files[fileName] = new File(fileName, state[fileName]);
+            }.bind(this));
+        };
+        FileSystem.prototype.toJSON = function () {
+            var json = {};
+            Object.keys(this.files).forEach(function (fileName) {
+                json[fileName] = this.files[fileName].content;
+            }.bind(this));
+            return json;
+        };
+        FileSystem.prototype.getFileByName = function (fileName) {
+            return this.files[fileName];
+        };
+        FileSystem.prototype.createFile = function (fileName) {
+            return this.files[fileName] = new File(fileName);
+        };
+        return FileSystem;
+    })();
+    return FileSystem;
+});
+
+define('console',["require", "exports", "tmpl", "settings", "fileSystem"], function (require, exports, Tmpl, Settings, FileSystem) {
     var WebConsole = (function () {
         function WebConsole() {
             this.state = {};
@@ -4613,17 +4661,20 @@ define('console',["require", "exports", "tmpl", "settings"], function (require, 
             if (document.addEventListener) {
                 document.addEventListener("DOMContentLoaded", this.onDocumentReady.bind(this));
             }
+            this.fileSystem = new FileSystem(this);
             this.loadFromLocalStorage();
         }
         WebConsole.prototype.loadFromLocalStorage = function () {
             if (localStorage[this.localStorageKey]) {
                 this.state = JSON.parse(localStorage[this.localStorageKey]);
                 this.history = this.state.history;
+                this.fileSystem.setState(this.state.fileSystem);
             }
             this.state.settings = this.state.settings || this.defaultSettings;
         };
         WebConsole.prototype.saveToLocalStorage = function () {
             this.state.history = this.history;
+            this.state.fileSystem = this.fileSystem.toJSON();
             localStorage[this.localStorageKey] = JSON.stringify(this.state);
         };
         WebConsole.prototype.cacheEls = function () {
@@ -4703,30 +4754,58 @@ define('console',["require", "exports", "tmpl", "settings"], function (require, 
             this.settings = new Settings(this, {});
         };
         WebConsole.prototype.processingInput = function (command) {
-            var isNotFound = true, commands = command.split(this.reroutingSymbol), output;
-            console.log(commands);
-            commands.forEach(function (item) {
-                var commandItem = item.trim().split(" ");
-                this.commands.forEach(function (item) {
-                    if (item.name === commandItem[0]) {
-                        isNotFound = false;
-                        output = item.fn(output, commandItem.slice(1));
-                    }
+            var isNotFound = true, commands = command.split(this.reroutingSymbol), output, lockedFn;
+            if (command.length) {
+                commands.forEach(function (item, index) {
+                    var commandItem = item.trim().split(" ");
+                    this.commands.forEach(function (item) {
+                        if (item.name === commandItem[0]) {
+                            isNotFound = false;
+                            if (!item.isLocked) {
+                                output = item.fn(output, commandItem.slice(1));
+                            }
+                            else {
+                                lockedFn = item.fn(output, commandItem.slice(1));
+                                output = lockedFn();
+                                setInterval(function () {
+                                    output = lockedFn();
+                                    commands.slice(index + 1).forEach(function (item) {
+                                        var commandItem = item.trim().split(" ");
+                                        this.commands.forEach(function (item) {
+                                            if (item.name === commandItem[0]) {
+                                                output = item.fn(output, commandItem.slice(1));
+                                            }
+                                        }.bind(this));
+                                    }.bind(this));
+                                    if (output) {
+                                        this.print(output, true);
+                                    }
+                                }.bind(this), 1000);
+                            }
+                        }
+                    }.bind(this));
                 }.bind(this));
-            }.bind(this));
-            if (isNotFound) {
-                this.print(command + " - command not found");
+                if (isNotFound) {
+                    this.print(command + " - command not found");
+                }
+                else if (output) {
+                    this.print(command + "<br/>" + output);
+                }
+                this.history.push(command);
+                this.historyIndex = 0;
+                this.saveToLocalStorage();
             }
-            else if (output) {
-                this.print(output);
+            else {
+                this.print("<br/>");
             }
-            this.history.push(command);
-            this.historyIndex = 0;
-            this.saveToLocalStorage();
         };
-        WebConsole.prototype.print = function (message) {
+        WebConsole.prototype.print = function (message, isSimpleText) {
+            if (isSimpleText === void 0) { isSimpleText = false; }
             var line = document.createElement("div");
-            line.innerHTML = this.start + message;
+            if (!isSimpleText) {
+                line.innerHTML += this.start;
+            }
+            line.innerHTML += message;
             if (this.output) {
                 this.output.appendChild(line);
                 this.output.scrollTop = this.output.scrollHeight;
@@ -4749,9 +4828,10 @@ define('console',["require", "exports", "tmpl", "settings"], function (require, 
                 this.saveToLocalStorage();
             }
         };
-        WebConsole.prototype.registerCommand = function (command, callback) {
+        WebConsole.prototype.registerCommand = function (command, isLocked, callback) {
             this.commands.push({
                 name: command,
+                isLocked: isLocked,
                 fn: callback
             });
         };
@@ -4772,9 +4852,6 @@ define('console',["require", "exports", "tmpl", "settings"], function (require, 
 define('timing',["require", "exports"], function (require, exports) {
     return function (webConsole) {
         var timings = [];
-        webConsole.registerCommand("now", function () {
-            return new Date();
-        });
         webConsole.registerApi("time", function (name) {
             timings.push({
                 name: name,
@@ -4811,18 +4888,59 @@ define('timing',["require", "exports"], function (require, exports) {
 
 define('base',["require", "exports"], function (require, exports) {
     return function (webConsole) {
-        webConsole.registerApi("log", function (message) {
-            webConsole.print(message);
+        webConsole.registerApi("log", function (message, fileName) {
+            if (fileName === void 0) { fileName = null; }
+            var file;
+            if (!fileName) {
+                webConsole.print(message);
+            }
+            else {
+                file = webConsole.fileSystem.getFileByName(fileName);
+                if (!file) {
+                    file = webConsole.fileSystem.createFile(fileName);
+                }
+                file.write(message);
+            }
         });
-        webConsole.registerCommand("clear", function () {
+        webConsole.registerCommand("clear", false, function () {
             webConsole.clear();
         });
-        webConsole.registerCommand("grep", function (output, args) {
-            var str = String(output).toLowerCase(), search = String(args[0]).toLowerCase(), result = "", i = -1;
+        webConsole.registerCommand("grep", false, function (output, args) {
+            var str = String(output).toLowerCase(), search = String(args[0]).toLowerCase(), result = "", i = -1, start, end;
             while ((i = str.indexOf(search, i + 1)) !== -1) {
-                result += String(output).slice(i - 100, i + 100) + "<br/>";
+                start = str.lastIndexOf("<br/>", i);
+                end = str.indexOf("<br/>", i);
+                end = end === -1 ? String(output).length : end;
+                result += String(output).slice(start, end);
             }
             return result;
+        });
+        webConsole.registerCommand("cat", false, function (output, args) {
+            var result, fileName = args[0], file = webConsole.fileSystem.getFileByName(fileName);
+            if (file) {
+                result = file.getContent();
+            }
+            else {
+                result = fileName + ": No such file or directory";
+            }
+            return result;
+        });
+        webConsole.registerCommand("tail", true, function (output, args) {
+            var result, fileName = args[0], file = webConsole.fileSystem.getFileByName(fileName), lastResult = "";
+            if (file) {
+                result = file.getContent();
+            }
+            else {
+                result = fileName + ": No such file or directory";
+            }
+            return function () {
+                var ret, fileContent = file.getContent();
+                ret = fileContent.slice(lastResult.length);
+                if (ret) {
+                    lastResult += ret;
+                }
+                return ret;
+            };
         });
     };
 });

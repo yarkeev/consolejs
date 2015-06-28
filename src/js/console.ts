@@ -1,5 +1,6 @@
 import Tmpl = require("tmpl");
 import Settings = require("settings");
+import FileSystem = require("fileSystem");
 
 interface Command {
 	name: String;
@@ -7,6 +8,8 @@ interface Command {
 }
 
 class WebConsole {
+
+	public fileSystem: FileSystem;
 
 	private state: any = {};
 	private el: HTMLElement;
@@ -29,6 +32,8 @@ class WebConsole {
 			document.addEventListener("DOMContentLoaded", this.onDocumentReady.bind(this));
 		}
 
+		this.fileSystem = new FileSystem(this);
+
 		this.loadFromLocalStorage();
 	}
 
@@ -37,12 +42,14 @@ class WebConsole {
 			this.state = JSON.parse(localStorage[this.localStorageKey]);
 
 			this.history = this.state.history;
+			this.fileSystem.setState(this.state.fileSystem);
 		}
 		this.state.settings = this.state.settings || this.defaultSettings;
 	}
 
 	protected saveToLocalStorage() {
 		this.state.history = this.history;
+		this.state.fileSystem = this.fileSystem.toJSON();
 
 		localStorage[this.localStorageKey] = JSON.stringify(this.state);
 	}
@@ -140,35 +147,65 @@ class WebConsole {
 	public processingInput(command: string) {
 		var isNotFound: Boolean = true,
 			commands: string[] = command.split(this.reroutingSymbol),
-			output: string;
+			output: string,
+			lockedFn;
 
-		console.log(commands);
-		commands.forEach(function (item) {
-			var commandItem: string = item.trim().split(" ");
+		if (command.length) {
+			commands.forEach(function(item, index) {
+				var commandItem: string = item.trim().split(" ");
 
-			this.commands.forEach(function(item) {
-				if (item.name === commandItem[0]) {
-					isNotFound = false;
-					output = item.fn(output, commandItem.slice(1));
-				}
+				this.commands.forEach(function(item) {
+					if (item.name === commandItem[0]) {
+						isNotFound = false;
+						if (!item.isLocked) {
+							output = item.fn(output, commandItem.slice(1));
+						} else {
+							lockedFn = item.fn(output, commandItem.slice(1));
+							output = lockedFn();
+
+							setInterval(function() {
+								output = lockedFn();
+
+								commands.slice(index + 1).forEach(function(item) {
+									var commandItem: string[] = item.trim().split(" ");
+
+									this.commands.forEach(function(item) {
+										if (item.name === commandItem[0]) {
+											output = item.fn(output, commandItem.slice(1));
+										}
+									}.bind(this));
+								}.bind(this));
+
+								if (output) {
+									this.print(output, true);
+								}
+							}.bind(this), 1000);
+						}
+					}
+				}.bind(this));
 			}.bind(this));
-		}.bind(this));
 
-		if (isNotFound) {
-			this.print(command + " - command not found");
-		} else if (output) {
-			this.print(output);
+			if (isNotFound) {
+				this.print(command + " - command not found");
+			} else if (output) {
+				this.print(command + "<br/>" + output);
+			}
+
+			this.history.push(command);
+			this.historyIndex = 0;
+			this.saveToLocalStorage();
+		} else {
+			this.print("<br/>");
 		}
-
-		this.history.push(command);
-		this.historyIndex = 0;
-		this.saveToLocalStorage();
 	}
 
-	public print(message: string) {
+	public print(message: string, isSimpleText: boolean = false) {
 		var line: HTMLElement = document.createElement("div");
 
-		line.innerHTML = this.start + message;
+		if (!isSimpleText) {
+			line.innerHTML += this.start;
+		}
+		line.innerHTML += message;
 
 		if (this.output) {
 			this.output.appendChild(line);
@@ -195,9 +232,10 @@ class WebConsole {
 		}
 	}
 
-	public registerCommand(command: String, callback: Function) {
+	public registerCommand(command: String, isLocked: boolean, callback: Function) {
 		this.commands.push({
 			name: command,
+			isLocked: isLocked,
 			fn: callback
 		});
 	}

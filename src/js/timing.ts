@@ -9,10 +9,6 @@ export = function(webConsole: WebConsole) {
 
 	var timings: TimeItem[] = [];
 
-	webConsole.registerCommand("now", function() {
-		return new Date();
-	});
-
 	webConsole.registerApi("time", function(name) {
 		timings.push({
 			name: name,

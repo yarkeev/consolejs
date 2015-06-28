@@ -1,4 +1,4 @@
-define(["require", "exports", "tmpl", "settings"], function (require, exports, Tmpl, Settings) {
+define(["require", "exports", "tmpl", "settings", "fileSystem"], function (require, exports, Tmpl, Settings, FileSystem) {
     var WebConsole = (function () {
         function WebConsole() {
             this.state = {};
@@ -15,17 +15,20 @@ define(["require", "exports", "tmpl", "settings"], function (require, exports, T
             if (document.addEventListener) {
                 document.addEventListener("DOMContentLoaded", this.onDocumentReady.bind(this));
             }
+            this.fileSystem = new FileSystem(this);
             this.loadFromLocalStorage();
         }
         WebConsole.prototype.loadFromLocalStorage = function () {
             if (localStorage[this.localStorageKey]) {
                 this.state = JSON.parse(localStorage[this.localStorageKey]);
                 this.history = this.state.history;
+                this.fileSystem.setState(this.state.fileSystem);
             }
             this.state.settings = this.state.settings || this.defaultSettings;
         };
         WebConsole.prototype.saveToLocalStorage = function () {
             this.state.history = this.history;
+            this.state.fileSystem = this.fileSystem.toJSON();
             localStorage[this.localStorageKey] = JSON.stringify(this.state);
         };
         WebConsole.prototype.cacheEls = function () {
@@ -105,30 +108,58 @@ define(["require", "exports", "tmpl", "settings"], function (require, exports, T
             this.settings = new Settings(this, {});
         };
         WebConsole.prototype.processingInput = function (command) {
-            var isNotFound = true, commands = command.split(this.reroutingSymbol), output;
-            console.log(commands);
-            commands.forEach(function (item) {
-                var commandItem = item.trim().split(" ");
-                this.commands.forEach(function (item) {
-                    if (item.name === commandItem[0]) {
-                        isNotFound = false;
-                        output = item.fn(output, commandItem.slice(1));
-                    }
+            var isNotFound = true, commands = command.split(this.reroutingSymbol), output, lockedFn;
+            if (command.length) {
+                commands.forEach(function (item, index) {
+                    var commandItem = item.trim().split(" ");
+                    this.commands.forEach(function (item) {
+                        if (item.name === commandItem[0]) {
+                            isNotFound = false;
+                            if (!item.isLocked) {
+                                output = item.fn(output, commandItem.slice(1));
+                            }
+                            else {
+                                lockedFn = item.fn(output, commandItem.slice(1));
+                                output = lockedFn();
+                                setInterval(function () {
+                                    output = lockedFn();
+                                    commands.slice(index + 1).forEach(function (item) {
+                                        var commandItem = item.trim().split(" ");
+                                        this.commands.forEach(function (item) {
+                                            if (item.name === commandItem[0]) {
+                                                output = item.fn(output, commandItem.slice(1));
+                                            }
+                                        }.bind(this));
+                                    }.bind(this));
+                                    if (output) {
+                                        this.print(output, true);
+                                    }
+                                }.bind(this), 1000);
+                            }
+                        }
+                    }.bind(this));
                 }.bind(this));
-            }.bind(this));
-            if (isNotFound) {
-                this.print(command + " - command not found");
+                if (isNotFound) {
+                    this.print(command + " - command not found");
+                }
+                else if (output) {
+                    this.print(command + "<br/>" + output);
+                }
+                this.history.push(command);
+                this.historyIndex = 0;
+                this.saveToLocalStorage();
             }
-            else if (output) {
-                this.print(output);
+            else {
+                this.print("<br/>");
             }
-            this.history.push(command);
-            this.historyIndex = 0;
-            this.saveToLocalStorage();
         };
-        WebConsole.prototype.print = function (message) {
+        WebConsole.prototype.print = function (message, isSimpleText) {
+            if (isSimpleText === void 0) { isSimpleText = false; }
             var line = document.createElement("div");
-            line.innerHTML = this.start + message;
+            if (!isSimpleText) {
+                line.innerHTML += this.start;
+            }
+            line.innerHTML += message;
             if (this.output) {
                 this.output.appendChild(line);
                 this.output.scrollTop = this.output.scrollHeight;
@@ -151,9 +182,10 @@ define(["require", "exports", "tmpl", "settings"], function (require, exports, T
                 this.saveToLocalStorage();
             }
         };
-        WebConsole.prototype.registerCommand = function (command, callback) {
+        WebConsole.prototype.registerCommand = function (command, isLocked, callback) {
             this.commands.push({
                 name: command,
+                isLocked: isLocked,
                 fn: callback
             });
         };
