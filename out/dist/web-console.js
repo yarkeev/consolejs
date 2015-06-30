@@ -4802,7 +4802,6 @@ define('console',["require", "exports", "tmpl", "settings", "fileSystem"], funct
         };
         WebConsole.prototype.onBodyMouseMove = function (event) {
             event.preventDefault();
-            event.stopPropagation();
             if (this.isResizeNow) {
                 this.el.style.height = String(this.el.offsetHeight + (event.pageY - this.lastPageY)) + "px";
             }
