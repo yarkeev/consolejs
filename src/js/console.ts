@@ -164,8 +164,6 @@ class WebConsole {
 	}
 
 	protected onBodyMouseMove(event: MouseEvent) {
-		event.preventDefault();
-
 		if (this.isResizeNow) {
 			this.el.style.height = String(this.el.offsetHeight + (event.pageY - this.lastPageY)) + "px";
 		}

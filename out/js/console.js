@@ -125,7 +125,6 @@ define(["require", "exports", "tmpl", "settings", "fileSystem"], function (requi
             this.lastKeyDownKey = event.keyCode;
         };
         WebConsole.prototype.onBodyMouseMove = function (event) {
-            event.preventDefault();
             if (this.isResizeNow) {
                 this.el.style.height = String(this.el.offsetHeight + (event.pageY - this.lastPageY)) + "px";
             }
