@@ -218,12 +218,8 @@ define(["require", "exports", "tmpl", "settings", "fileSystem"], function (requi
                 this.saveToLocalStorage();
             }
         };
-        WebConsole.prototype.registerCommand = function (command, isLocked, callback) {
-            this.commands.push({
-                name: command,
-                isLocked: isLocked,
-                fn: callback
-            });
+        WebConsole.prototype.registerCommand = function (command) {
+            this.commands.push(command);
         };
         WebConsole.prototype.registerApi = function (command, callback) {
             try {
@@ -233,6 +229,9 @@ define(["require", "exports", "tmpl", "settings", "fileSystem"], function (requi
             }
             catch (ignore) {
             }
+        };
+        WebConsole.prototype.getCommands = function () {
+            return this.commands;
         };
         return WebConsole;
     })();

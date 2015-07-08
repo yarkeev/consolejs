@@ -1,11 +1,8 @@
 import Tmpl = require("tmpl");
 import Settings = require("settings");
 import FileSystem = require("fileSystem");
+import Command = require("command");
 
-interface Command {
-	name: String;
-	fn: Function;
-}
 
 class WebConsole {
 
@@ -276,12 +273,8 @@ class WebConsole {
 		}
 	}
 
-	public registerCommand(command: String, isLocked: boolean, callback: Function) {
-		this.commands.push({
-			name: command,
-			isLocked: isLocked,
-			fn: callback
-		});
+	public registerCommand(command: Command) {
+		this.commands.push(command);
 	}
 
 	public registerApi(command: string, callback: Function) {
@@ -292,6 +285,10 @@ class WebConsole {
 		} catch (ignore) {
 			//hack empty block
 		}
+	}
+
+	public getCommands() {
+		return this.commands;
 	}
 }
 
