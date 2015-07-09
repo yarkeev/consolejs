@@ -4,22 +4,24 @@ export = function(webConsole) {
 
 	var lastEntries = [];
 
-	performance.onwebkitresourcetimingbufferfull = function() {
-		performance.webkitSetResourceTimingBufferSize(10000);
-	};
+	if (performance) {
+		performance.onwebkitresourcetimingbufferfull = function() {
+			performance.webkitSetResourceTimingBufferSize(10000);
+		};
 
-	setInterval(function () {
-		var entries = window.performance.getEntries(),
-			timeStr: string;
+		setInterval(function () {
+			var entries = performance.getEntries(),
+				timeStr: string;
 
-		entries.slice(lastEntries.length).forEach(function (item) {
-			if (item.initiatorType === "xmlhttprequest") {
-				timeStr = " <span style='color:#2AFF00'>" + (item.responseEnd - item.requestStart).toFixed(2) + "ms</span>";
-				webConsole.log(item.name + timeStr, "/logs/ajax");
-			}
-		});
+			entries.slice(lastEntries.length).forEach(function (item) {
+				if (item.initiatorType === "xmlhttprequest") {
+					timeStr = " <span style='color:#2AFF00'>" + (item.responseEnd - item.requestStart).toFixed(2) + "ms</span>";
+					webConsole.log(item.name + timeStr, "/logs/ajax");
+				}
+			});
 
-		lastEntries = entries;
+			lastEntries = entries;
 
-	}, 1000);
+		}, 1000);
+	}
 };
