@@ -5056,7 +5056,7 @@ define('base',["require", "exports"], function (require, exports) {
 define('ajaxLog',["require", "exports"], function (require, exports) {
     return function (webConsole) {
         var lastEntries = [];
-        if (performance) {
+        if (performance && performance.getEntries) {
             performance.onwebkitresourcetimingbufferfull = function () {
                 performance.webkitSetResourceTimingBufferSize(10000);
             };
