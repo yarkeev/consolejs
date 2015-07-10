@@ -4987,7 +4987,7 @@ define('base',["require", "exports"], function (require, exports) {
         });
         webConsole.registerCommand({
             name: "help",
-            description: "display a list of registered",
+            description: "display a list of registered commands",
             isLocked: false,
             fn: function () {
                 return webConsole.getCommands().map(function (item) {
@@ -5027,7 +5027,7 @@ define('base',["require", "exports"], function (require, exports) {
         });
         webConsole.registerCommand({
             name: "tail",
-            description: "display the contents of a virtual file",
+            description: "watched display the contents of a virtual file",
             isLocked: true,
             fn: function (output, args) {
                 var result, fileName = args[0], file = webConsole.fileSystem.getFileByName(fileName), lastResult = "";
