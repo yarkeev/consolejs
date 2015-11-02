@@ -6,7 +6,7 @@ export = function(webConsole) {
 
 	if (performance && performance.getEntries) {
 		performance.onresourcetimingbufferfull = function() {
-			performance.webkitSetResourceTimingBufferSize(10000);
+			performance.setResourceTimingBufferSize(10000);
 		};
 
 		setInterval(function () {
