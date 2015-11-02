@@ -3,7 +3,7 @@ define(["require", "exports"], function (require, exports) {
         var lastEntries = [];
         if (performance && performance.getEntries) {
             performance.onresourcetimingbufferfull = function () {
-                performance.webkitSetResourceTimingBufferSize(10000);
+                performance.setResourceTimingBufferSize(10000);
             };
             setInterval(function () {
                 var entries = performance.getEntries(), timeStr;
