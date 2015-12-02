@@ -4977,6 +4977,21 @@ define('base',["require", "exports"], function (require, exports) {
                 file.write(message);
             }
         });
+        webConsole.registerApi("error", function (message, fileName) {
+            if (fileName === void 0) { fileName = null; }
+            var file;
+            if (!fileName) {
+                console.error(message);
+                webConsole.print(message);
+            }
+            else {
+                file = webConsole.fileSystem.getFileByName(fileName);
+                if (!file) {
+                    file = webConsole.fileSystem.createFile(fileName);
+                }
+                file.write(message);
+            }
+        });
         webConsole.registerCommand({
             name: "clear",
             description: "clear screen",
