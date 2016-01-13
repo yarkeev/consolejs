@@ -58,7 +58,7 @@ class WebConsole {
 		this.state.history = this.history;
 		this.state.fileSystem = this.fileSystem.toJSON();
 
-		localStorage[this.localStorageKey] = JSON.stringify(this.state);
+		localStorage.setItem(this.localStorageKey, JSON.stringify(this.state));
 	}
 
 	protected cacheEls() {

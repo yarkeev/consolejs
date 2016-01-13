@@ -37,7 +37,7 @@ define(["require", "exports", "tmpl", "settings", "fileSystem"], function (requi
         WebConsole.prototype.saveToLocalStorage = function () {
             this.state.history = this.history;
             this.state.fileSystem = this.fileSystem.toJSON();
-            localStorage[this.localStorageKey] = JSON.stringify(this.state);
+            localStorage.setItem(this.localStorageKey, JSON.stringify(this.state));
         };
         WebConsole.prototype.cacheEls = function () {
             this.input = this.el.querySelector(".b-web-console__input");
